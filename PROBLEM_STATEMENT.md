@@ -14,36 +14,31 @@ You are given a working REST application (the Onboarding Tracker from the previo
 | **API client** | Bruno |
 | **Time budget** | **4 hours in total, spread over 2 days** (plan below) |
 
-## 2. Who this is for
-This exercise is for everyone, whatever your Java experience.
-- **If you are new to Java:** follow the step-by-step plan in section 6 and the hints. You are expected to do the **Core** tasks. Ask your pair partner or an instructor when stuck for more than 15 minutes.
-- **If you are experienced:** do the **Core** tasks quickly, then take the **Stretch** tasks in section 5.3. Please spend your spare time helping a partner who is new to Java.
 
 ## 3. Learning objectives
 By the end you will be able to:
-- Explain why a framework upgrade is needed (end of support, vulnerabilities, platform compatibility).
+
 - Read a build or compile error from an upgrade and trace it to a breaking change.
 - Migrate `javax.*` imports to `jakarta.*`.
 - Replace removed Spring Security 5 configuration with the Spring Security 6 style.
 - Find and fix configuration properties that changed or were removed.
-- Prove an upgrade is safe with tests and a manual check in Bruno.
+
 
 ## 4. Prerequisites
 - **JDK 17 or newer.** Check with `java -version`.
-- **Git** and **internet access** (Gradle downloads libraries on first build).
 - **Bruno** and an IDE (IntelliJ IDEA, or VS Code with the Extension Pack for Java).
 
 ## 5. Your task
 
 ### 5.1 Before you change anything (baseline)
-1. Clone the starter project and run the tests: `gradlew.bat test` (macOS or Linux: `./gradlew test`). They must pass.
-2. Start the app with `gradlew.bat bootRun`. In Bruno, call both APIs with **HTTP Basic** auth (`admin` / `admin123`):
+1. Clone the starter project and run the tests: `gradlew.bat test`. They must pass.
+2. Start the app. In Bruno, call both APIs with **HTTP Basic** :
    - `POST /api/employees` with `{ "name": "asha RAO", "role": "Engineer", "onboardingDate": "2026-11-10" }` returns `201` and the name comes back as `Asha Rao`.
    - `GET /api/employees` returns `200` and the list.
-   - Both return `401` without credentials.
-3. Create a git branch: `git checkout -b upgrade-boot-3`.
-4. Save your baseline: run `gradlew.bat dependencies --configuration runtimeClasspath > before.txt`.
+   - Both return `401` without credentials. [Check if this line is required?].
+3. Create a git branch.
 
+   
 If port 8080 is busy, add `--args="--server.port=8081"` to `bootRun`.
 
 ### 5.2 Core tasks (everyone)
@@ -51,10 +46,10 @@ The application must keep the same behavior after each of these.
 
 | # | Task | What "done" looks like |
 |---|---|---|
-| C1 | **Write a short upgrade plan** (5 lines) in `MIGRATION_NOTES.md`: what is being upgraded and why. Use the facts in section 7. | File exists. |
-| C2 | **Upgrade the build.** Move the Spring Boot Gradle plugin to 3.5.x and the dependency-management plugin to a compatible version. | `gradlew.bat compileJava` gets past dependency resolution. |
+
+| C2 | **Upgrade the build.** Move the Spring Boot Gradle plugin to 3.5.x and the dependency-management plugin to a compatible version. 
 | C3 | **Fix the `javax` to `jakarta` break.** Spring Boot 3 uses Jakarta EE 9+, so the package names changed. | No `javax.persistence` or `javax.validation` left in `src`. App compiles. |
-| C4 | **Replace the removed Spring Security configuration.** `WebSecurityConfigurerAdapter` no longer exists in Spring Security 6. | `SecurityConfig` uses a `SecurityFilterChain` bean and a `UserDetailsService` bean. Same rules as before. |
+
 | C5 | **Clean up configuration properties.** Some properties in `application.properties` are no longer supported. | None of the old, unsupported properties remain, and you list them in your notes. |
 | C6 | **Fix the vulnerable library.** Update `commons-text` to a fixed version. | `before.txt` shows the old version, `after.txt` shows the new one. |
 | C7 | **Prove it works.** All tests pass, and your Bruno checks from 5.1 give the same results. | `gradlew.bat test` is `BUILD SUCCESSFUL`. Screenshot of Bruno. |
