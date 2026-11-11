@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:testdb")
 @AutoConfigureMockMvc
+@SuppressWarnings("null") // Cleans up the 7 Framework type-safety warnings in this test class
 class EmployeeApiTests {
 
     @Autowired
