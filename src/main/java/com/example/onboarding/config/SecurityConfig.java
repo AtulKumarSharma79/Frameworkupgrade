@@ -28,14 +28,14 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/blog/**").permitAll()
+                .requestMatchers( "/api/**").permitAll()
                 .anyRequest().authenticated()
             )
 
-            .httpBasic(Customizer.withDefaults())
-            .headers(headers -> headers
-                .frameOptions(frameOptions -> frameOptions.sameOrigin())
-            );
+            .httpBasic(Customizer.withDefaults());
+            //.headers(headers -> headers
+                //.frameOptions(frameOptions -> frameOptions.sameOrigin())
+            //);
         
         return http.build();
     }
