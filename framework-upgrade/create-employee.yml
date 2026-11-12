@@ -1,0 +1,26 @@
+info:
+  name: create-employee
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8080/api/employees
+  body:
+    type: json
+    data: |-
+      {
+        "name": "madbpopye",
+        "role": "swe",
+        "onboardingDate": "2026-11-10"
+      }
+  auth:
+    type: basic
+    username: admin
+    password: admin123
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
