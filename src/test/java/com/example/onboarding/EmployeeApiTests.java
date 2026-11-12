@@ -21,14 +21,14 @@ class EmployeeApiTests {
 
     @Test
     void createThenFetch() throws Exception {
-        mvc.perform(post("/api/employees").with(httpBasic("admin", "admin123"))
+        mvc.perform(post("/api/employees").with(httpBasic("admin", "{noop}admin123"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"asha RAO\",\"role\":\"Engineer\",\"onboardingDate\":\"2026-11-10\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.name").value("Asha Rao"));
 
-        mvc.perform(get("/api/employees").with(httpBasic("admin", "admin123")))
+        mvc.perform(get("/api/employees").with(httpBasic("admin", "{noop}admin123")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Asha Rao"))
                 .andExpect(jsonPath("$[0].onboardingDate").value("2026-11-10"));
@@ -36,14 +36,14 @@ class EmployeeApiTests {
 
     @Test
     void rejectsMissingFields() throws Exception {
-        mvc.perform(post("/api/employees").with(httpBasic("admin", "admin123"))
+        mvc.perform(post("/api/employees").with(httpBasic("admin", "{noop}admin123"))
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void rejectsBadDateFormat() throws Exception {
-        mvc.perform(post("/api/employees").with(httpBasic("admin", "admin123"))
+        mvc.perform(post("/api/employees").with(httpBasic("admin", "{noop}admin123"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"A\",\"role\":\"B\",\"onboardingDate\":\"10-11-2026\"}"))
                 .andExpect(status().isBadRequest());
