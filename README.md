@@ -161,8 +161,7 @@ runtimeOnly 'org.springframework.boot:spring-boot-properties-migrator'
 
 Then I ran `gradlew.bat bootRun` and looked in the terminal output for the `PropertiesMigrationListener` section headed “The use of configuration keys that are no longer supported was found in the environment.” 
 
-- `server.max-http-header-size` at line 3, with `server.max-http-request-header-size` as the replacement. The migrator said the replacement had an incompatible target type, so I checked the Spring Boot 3.5 application-properties reference and changed the key manually, keeping the 16 KB size as `16KB`.
-
+- `server.max-http-header-size` at line 3, with `server.max-http-request-header-size` as the replacement. 
 
 ```properties
 # Before
@@ -173,8 +172,6 @@ server.max-http-request-header-size=16KB
 ```
 
 - `spring.jpa.hibernate.use-new-id-generator-mappings` at line 13. The migrator said Hibernate no longer supports disabling the new ID mappings. Hibernate 6 uses those mappings by default, so I removed the obsolete setting rather than replacing it.
-
-the migrator named the old properties and suggested the first property's replacement; I checked that replacement in the Boot 3.5 reference, and followed the Hibernate explanation for the second. 
 
 
 ### 5. Verification
@@ -187,12 +184,36 @@ gradlew.bat test
 
 The test suite completed with `BUILD SUCCESSFUL`. The tests cover creating and fetching an employee, input validation, and requiring authentication. I should run them again after any later code changes.
 
-### Still to do
+### 6. Update the vulnerable library (C6)
 
-- **C6: Update Commons Text.** `build.gradle` still declares `org.apache.commons:commons-text:1.9`. The exercise identifies 1.9 as vulnerable and says the issue is fixed in 1.10.0 or later. This dependency has **not** been upgraded yet, so the overall upgrade exercise is not fully complete. After choosing a suitable fixed version, verify the resolved version with `gradlew.bat dependencyInsight --dependency commons-text --configuration runtimeClasspath`.
+**File:** `build.gradle`.
 
-### links to remeber
+```text
+// Before
+implementation 'org.apache.commons:commons-text:1.9'
 
+// After
+implementation 'org.apache.commons:commons-text:1.15.0'
+```
+ This line tells Gradle that the application uses Apache Commons Text, including its `WordUtils` class. Because the version is written explicitly here, changing the Spring Boot version does not automatically replace it.
+
+The old version can compile and run, but it is flagged for a known vulnerability (Text4Shell, CVE-2022-42889). The exercise says the vulnerability is fixed starting with Commons Text 1.10.0. I selected the stable 1.15.0 release.
+
+To check what version the running application will have available, I ran:
+
+```text
+gradlew.bat dependencyInsight --dependency commons-text --configuration runtimeClasspath
+```
+
+The `runtimeClasspath` is Gradle's list of libraries available when the application runs. A **classpath** is simply where Java looks for classes and library JAR files. `dependencyInsight` reports which version is selected and why. The output showed `org.apache.commons:commons-text:1.15.0` under `runtimeClasspath`, confirming the edit.
+
+I then ran `gradlew.bat test`; the test suite completed with `BUILD SUCCESSFUL`.
+
+### Links to remember
+
+- [Commons Text on Maven Central](https://central.sonatype.com/artifact/org.apache.commons/commons-text) — artifact versions.
+- [Commons Text release history](https://commons.apache.org/proper/commons-text/changes.html) — published versions and release notes.
+- [CVE-2022-42889](https://nvd.nist.gov/vuln/detail/CVE-2022-42889) — vulnerability details.
 - [Spring Boot 3.0 Migration Guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide) — official migration notes, including framework and Hibernate changes.
 - [Spring Boot 3.5 application properties](https://docs.spring.io/spring-boot/3.5/appendix/application-properties/index.html) — property names and descriptions.
 - [Spring Security Java configuration](https://docs.spring.io/spring-security/reference/servlet/configuration/java.html) and [request authorization](https://docs.spring.io/spring-security/reference/servlet/authorization/authorize-http-requests.html) — bean-based configuration and lambda DSL.
