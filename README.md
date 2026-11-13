@@ -34,9 +34,6 @@ id 'io.spring.dependency-management' version '1.1.7'
 
 The Spring Boot Gradle plugin supplies Boot's build tasks and works with Spring Boot 3.5. The dependency-management plugin lets Boot's dependency management choose compatible versions for Spring, Hibernate, Jackson, and other managed libraries. I generally should not add explicit versions for those managed libraries unless I have a specific reason.
 
-The project targets Java 17 (`sourceCompatibility = '17'`), which is the minimum Java version for Spring Boot 3. The exercise asks for a Boot 3.5.x release; the exact patch version is the one in `build.gradle`.
-
-**Why:** This is the framework upgrade itself, not just a library version bump. Boot 3 includes newer major versions of Spring Framework, Spring Security, and Hibernate, and those introduce source and configuration changes described below.
 
 ### 2. Change Java EE imports from `javax` to `jakarta` (C3)
 
@@ -59,8 +56,7 @@ import jakarta.validation.Valid;
 Boot 3 uses Jakarta EE APIs. Their packages moved from `javax.*` to `jakarta.*`, so JPA annotations such as `@Entity` and validation annotations such as `@NotBlank` must use the new package names. The annotations still serve the same purpose; the package imports changed.
 
 This is **not** a rule to replace every `javax` in a project. Some packages, such as `javax.sql`, are still part of Java. Change the Java EE APIs that moved, not unrelated JDK packages.
-
-**How I chose the imports:** I checked what each annotation or type is for, then used the Boot 3 / Jakarta package for that API. An IDE's “Organize Imports” or “Add Import” action can find a class used by its simple name; I should verify that the suggested package starts with `jakarta` for these migrated APIs. I can also check the class's package in the official API documentation. The compiler helps catch missing or invalid imports, but it cannot tell me whether I chose the semantically correct class if multiple classes have the same name.
+I checked what each annotation or type is for, then used the Boot 3 / Jakarta package for that API. An IDE's “Organize Imports” or “Add Import” action can find a class used by its simple name;
 
 ### 3. Replace the removed Spring Security adapter with beans
 
@@ -86,8 +82,7 @@ The `->` is Java's lambda operator. A lambda is a small function passed to anoth
 ```java
 csrf -> csrf.disable()
 ```
-
-Read this as: “when Spring gives this function a CSRF configuration object, call `disable()` on it.” `csrf` is just a local parameter name chosen by the author; it is not a special Spring or Java keyword. I could write the same thing more verbosely as `csrfConfigurer -> csrfConfigurer.disable()`. Java infers the parameter type from the method being called, so I usually do not need to write the type myself.
+when Spring gives this function a CSRF configuration object, call `disable()` on it.” `csrf` is just a local parameter name chosen by the author; it is not a special Spring or Java keyword. I could write the same thing more verbosely as `csrfConfigurer -> csrfConfigurer.disable()`. Java infers the parameter type from the method being called
 
 This lambda shape makes sense because the new methods accept a configuration callback: Spring supplies the right configurer, and the callback describes how to change it. For example, `authorize -> ...` receives the authorization configurer. The callback can contain several chained settings, as in the multi-line authorization example above.
 
@@ -111,9 +106,8 @@ SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 .requestMatchers(PathRequest.toH2Console()).permitAll()
 ```
 
-`requestMatchers` needs a rule describing which request(s) it should match. `PathRequest.toH2Console()` is a Spring Boot helper that returns a matcher for the H2 console path. Using the helper is safer than writing a string such as `"/h2-console/**"`: it follows Boot's configured H2 console path and avoids ambiguity about how a plain string path should be interpreted. The exercise specifically recommends this helper for the H2 console.
-
-This rule permits the console. The next rule, `.anyRequest().authenticated()`, requires authentication for every other request, including the employee API.
+`requestMatchers` needs a rule describing which request(s) it should match. `PathRequest.toH2Console()` is a Spring Boot helper that returns a matcher for the H2 console path. Using the helper is safer than writing a string such as `"/h2-console/**"`: it follows Boot's configured H2 console path 
+The next rule, `.anyRequest().authenticated()`, requires authentication for every other request, including the employee API.
 
 #### Keep HTTP Basic and the H2 frame setting
 
@@ -123,11 +117,9 @@ This rule permits the console. The next rule, `.anyRequest().authenticated()`, r
     headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
 ```
 
-The new HTTP Basic method accepts a configuration callback. `Customizer.withDefaults()` is Spring Security's ready-made callback meaning “use the standard HTTP Basic settings; I have no custom settings to add.” It does not mean “skip HTTP Basic.” The import is `org.springframework.security.config.Customizer`.
+The new HTTP Basic method accepts a configuration callback. `Customizer.withDefaults()` is Spring Security's ready-made callback meaning “use the standard HTTP Basic settings; I have no custom settings to add.”  The import is `org.springframework.security.config.Customizer`.
 
 The headers lambda keeps the previous `sameOrigin` frame policy. The H2 console uses frames, so allowing same-origin framing preserves its expected behavior without allowing framing from arbitrary sites.
-
-The configuration also keeps CSRF disabled, as the original exercise configuration did. That preserves the exercise's API behavior, but disabling CSRF should be reconsidered for a real browser-facing application, especially if browsers automatically send the credentials.
 
 #### Replace in-memory authentication configuration
 
@@ -146,11 +138,9 @@ UserDetailsService userDetailsService() {
 
 `UserDetailsService` is the Spring Security interface for loading user details during authentication. `InMemoryUserDetailsManager` is one implementation: it keeps the supplied user in application memory instead of loading users from a database. `User.withUsername(...)` builds the same kind of user record as the old configuration, and `.build()` produces the `UserDetails` object the manager stores. The username, password, and role remain the same as before.
 
-`{noop}` tells Spring Security not to encode this exercise password. It is suitable only for this sample; real applications should store appropriately encoded passwords, not plain text.
+`{noop}` tells Spring Security not to encode this exercise password.
 
-#### How to know which imports to add
-
-Imports name the Java classes used in the file. I used the classes required by the new method signatures and helpers, then let the IDE or compiler confirm their fully qualified names:
+#### Imports Added
 
 - `SecurityFilterChain` — the return type of the filter-chain bean.
 - `UserDetailsService`, `User`, and `InMemoryUserDetailsManager` — the user lookup contract, user builder, and in-memory implementation.
@@ -158,11 +148,21 @@ Imports name the Java classes used in the file. I used the classes required by t
 - `PathRequest` — Spring Boot's H2-console request matcher helper.
 - `HttpSecurity` — the configuration builder passed into the filter-chain bean.
 
-An IDE can add imports automatically, but I should check the package it selected. Official Javadocs and the Spring reference documentation show the fully qualified class names. If compilation says a type cannot be found, first check the spelling, package, and whether the corresponding Spring starter is present; do not guess an import from the class name alone.
 
 ### 4. Remove or rename unsupported configuration properties (C5)
 
 **File:** `src/main/resources/application.properties`.
+
+I temporarily added this diagnostic dependency inside `dependencies` in `build.gradle`:
+
+```groovy
+runtimeOnly 'org.springframework.boot:spring-boot-properties-migrator'
+```
+
+Then I ran `gradlew.bat bootRun` and looked in the terminal output for the `PropertiesMigrationListener` section headed “The use of configuration keys that are no longer supported was found in the environment.” 
+
+- `server.max-http-header-size` at line 3, with `server.max-http-request-header-size` as the replacement. The migrator said the replacement had an incompatible target type, so I checked the Spring Boot 3.5 application-properties reference and changed the key manually, keeping the 16 KB size as `16KB`.
+
 
 ```properties
 # Before
@@ -172,19 +172,10 @@ server.max-http-header-size=16KB
 server.max-http-request-header-size=16KB
 ```
 
-The request-header-size setting was renamed. The new name makes clear that the limit is for incoming HTTP request headers, and retains the 16 KB value.
+- `spring.jpa.hibernate.use-new-id-generator-mappings` at line 13. The migrator said Hibernate no longer supports disabling the new ID mappings. Hibernate 6 uses those mappings by default, so I removed the obsolete setting rather than replacing it.
 
-```properties
-# Before
-spring.jpa.hibernate.use-new-id-generator-mappings=true
+the migrator named the old properties and suggested the first property's replacement; I checked that replacement in the Boot 3.5 reference, and followed the Hibernate explanation for the second. 
 
-# After
-# Removed; Hibernate 6 uses the new ID generator mappings by default.
-```
-
-The Hibernate setting is no longer needed: Hibernate 6 uses the new ID generator mappings by default. Removing the old setting avoids keeping a property that no longer has a supported effect.
-
-These two property migrations are also why the README records both the old and new names instead of just saying “cleaned up properties.”
 
 ### 5. Verification
 
@@ -200,9 +191,8 @@ The test suite completed with `BUILD SUCCESSFUL`. The tests cover creating and f
 
 - **C6: Update Commons Text.** `build.gradle` still declares `org.apache.commons:commons-text:1.9`. The exercise identifies 1.9 as vulnerable and says the issue is fixed in 1.10.0 or later. This dependency has **not** been upgraded yet, so the overall upgrade exercise is not fully complete. After choosing a suitable fixed version, verify the resolved version with `gradlew.bat dependencyInsight --dependency commons-text --configuration runtimeClasspath`.
 
-### References
+### links to remeber
 
-- The provided [exercise instructions](PROBLEM_STATEMENT.md): Appendix A.2 (build), A.3 (Jakarta), A.4 (Security 6 migration and `PathRequest.toH2Console()`), A.5 (properties), and section 6 (Commons Text).
 - [Spring Boot 3.0 Migration Guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide) — official migration notes, including framework and Hibernate changes.
 - [Spring Boot 3.5 application properties](https://docs.spring.io/spring-boot/3.5/appendix/application-properties/index.html) — property names and descriptions.
 - [Spring Security Java configuration](https://docs.spring.io/spring-security/reference/servlet/configuration/java.html) and [request authorization](https://docs.spring.io/spring-security/reference/servlet/authorization/authorize-http-requests.html) — bean-based configuration and lambda DSL.
