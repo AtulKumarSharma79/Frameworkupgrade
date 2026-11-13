@@ -1,6 +1,8 @@
-# Onboarding Tracker (Spring Boot 2.7 starter for the upgrade exercise)
+# Onboarding Tracker
 
-Working REST API on **Spring Boot 2.7.18** with embedded H2 and HTTP Basic security. Your task is to upgrade it to Spring Boot 3.5.x. Read [PROBLEM_STATEMENT.md](PROBLEM_STATEMENT.md) first.
+Working REST API on **Spring Boot 4.1.2** and **Java 25** with embedded H2 and HTTP Basic security.
+
+The migration uses Jakarta Persistence and Validation APIs, Spring Security's `SecurityFilterChain` configuration, and the `spring-boot-starter-webmvc` starter. The removed `spring.jpa.hibernate.use-new-id-generator-mappings` setting was dropped; `server.max-http-header-size` was replaced by `server.max-http-request-header-size`.
 
 ## Run
 ```
